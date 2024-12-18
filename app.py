@@ -13,6 +13,7 @@ else:
 
 from langchain.document_loaders import UnstructuredPDFLoader
 from langchain_openai import ChatOpenAI
+from langchain.llms.openai import OpenAI
 from langchain.prompts.prompt import PromptTemplate
 from langchain.prompts import PromptTemplate
 from langchain.schema import Document
