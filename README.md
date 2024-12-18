@@ -10,6 +10,7 @@ This repository contains the source code for a Knowledge Graph Construction App.
 ## Installation
 To install and run the app locally, follow these steps:
 
-1. Clone this repository to your local machine.
-2. Install the required dependencies using the provided `requirements.txt` file.
-3. Run the app using: streamlit run app.py 
+1. git clone
+2. cd KG-App
+3. pip install -r requirements.txt
+4. streamlit run app.py
