@@ -1,7 +1,5 @@
 import streamlit as st
 import os
-import nltk
-nltk.download('punkt_tab')
 
 st.title("KG Construction App")
 
@@ -12,24 +10,29 @@ else:
     st.stop()
 from langchain_community.document_loaders import UnstructuredPDFLoader
 #from langchain.document_loaders import UnstructuredPDFLoader
-from langchain_openai import ChatOpenAI
-from langchain.llms.openai import OpenAI
-from langchain.prompts.prompt import PromptTemplate
-from langchain.prompts import PromptTemplate
-from langchain.schema import Document
-from langchain_openai import OpenAIEmbeddings
-embeddings = OpenAIEmbeddings()
+from langchain.llms import OpenAI
+from langchain.prompts import PromptTemplate, ChatPromptTemplate
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
-from langchain.storage import InMemoryStore
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.text_splitter import MarkdownHeaderTextSplitter
+from langchain.memory import ConversationBufferMemory, ChatMessageHistory
+from langchain.text_splitter import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain.retrievers import ParentDocumentRetriever
+from langchain.storage import InMemoryStore
+from langchain_openai import ChatOpenAI
+
 from langchain.chains import RetrievalQA, ConversationalRetrievalChain
 from langchain.output_parsers import CommaSeparatedListOutputParser
+from langchain.schema import Document
+from tempfile import NamedTemporaryFile
+
 output_parser = CommaSeparatedListOutputParser()
 from langchain.memory import ConversationBufferMemory
 from langchain.memory import ChatMessageHistory
 from tempfile import NamedTemporaryFile
+# Initialize objects
+embeddings = OpenAIEmbeddings()
+output_parser = CommaSeparatedListOutputParser()
+
 
 msgs = ChatMessageHistory()
 memory = ConversationBufferMemory(memory_key="chat_history", chat_memory=msgs, return_messages=True)
@@ -37,6 +40,7 @@ memory = ConversationBufferMemory(memory_key="chat_history", chat_memory=msgs, r
 def process_pdf(pdf_path):
     all_results1 = []
     all_results2 = []
+    all_results = []
 
     parent_splitter = RecursiveCharacterTextSplitter(chunk_size=2000)
     child_splitter = RecursiveCharacterTextSplitter(chunk_size=400)
@@ -240,16 +244,201 @@ Question: {question}
         template=template2, input_variables=["context", "question", "chat_history"], output_parser=CommaSeparatedListOutputParser()
     )
 
+    template3 =""" You are a Materials Science assistant in the field of hydrogen technologies, specializing in extracting nodes and edges for the knowledge graphs using the <http://emmo.info/emmo#> ontology, formatted as TTL. Your expertise lies in the fabrication workflow and materials in Materials Science. Use the provided context to answer the question at the end. If unsure, state that you don't know rather than conjecturing.
+
+Use the prefix "ex:" with IRI <http://example.com/> for any newly created entities that stored in chat_history with a unique ID. Only utilize classes from the <http://emmo.info/emmo#> ontology as defined.
+
+@prefix : <http://emmo.info/emmo#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@base <http://emmo.info/emmo/middle/properties> .
+
+#################################################################
+# Classes
+#################################################################
+###  http://emmo.info/emmo#EMMO_4207e895_8b83_4318_996a_72cfb32acd94
+
+:EMMO_4207e895_8b83_4318_996a_72cfb32acd94 rdf:type owl:Class ;
+                                           rdfs:subClassOf :EMMO_5b2222df_4da6_442f_8244_96e9e45887d1 ;
+                                           :EMMO_967080e5_2f42_4eb2_a3a9_c58143e835f9 ""Material is defined as a substance used to construct or compose objects, possessing specific physical and chemical properties. These properties determine the material's behavior under different conditions and its suitability for various applications. Materials can include chemicals, intermediates, products, components, molecules, atoms, devices, solvents and surfactants." ;
+                                           rdfs:comment "Materials are both the raw materials used as input for the main manufacturing process and the product materials as output of the manufacturing process." ;
+                                           rdfs:comment "surfactants, chemicals, intermediates, products, components, molecules, atoms, devices and solvents are material."
+                                           skos:prefLabel "Material".
+
+###  http://emmo.info/emmo#EMMO_a4d66059_5dd3_4b90_b4cb_10960559441b
+
+:EMMO_a4d66059_5dd3_4b90_b4cb_10960559441b rdf:type owl:Class ;
+                                           rdfs:subClassOf :EMMO_43e9a05d_98af_41b4_92f6_00f79a09bfce ,
+                                                           [ rdf:type owl:Restriction ;
+                                                             owl:onProperty :EMMO_c5aae418_1622_4d02_93c5_21159e28e6c1 ;
+                                                             owl:someValuesFrom :EMMO_86ca9b93_1183_4b65_81b8_c0fcd3bba5ad
+                                                           ] ;
+                                           :EMMO_967080e5_2f42_4eb2_a3a9_c58143e835f9 "Manufacturing is the process of converting raw materials into finished products using various physical, chemical and mechanical processes. In the context of hydrogen technologies, manufacturing includes the production of components such as fuel cells, electrolysers and hydrogen storage systems as well as the assembly of these components into complete systems." ;
+                                           rdfs:comment "It is considered the most important manufacturing process." ;
+                                           rdfs:comment: "HydrogenComponentManufacturing", "ManufacturingProcesses", "Assembly", "Fabrication", "Production"
+                                           skos:prefLabel "Manufacturing".
+
+###  http://emmo.info/emmo#EMMO_463bcfda_867b_41d9_a967_211d4d437cfb
+
+:EMMO_463bcfda_867b_41d9_a967_211d4d437cfb rdf:type owl:Class ;
+                                           rdfs:subClassOf :EMMO_10a5fd39_06aa_4648_9e70_f962a9cb2069 ,
+                                                           [ rdf:type owl:Restriction ;
+                                                             owl:onProperty :EMMO_ae2d1a96_bfa1_409a_a7d2_03d69e8a125a ;
+                                                             owl:someValuesFrom :EMMO_0f6f0120_c079_4d95_bb11_4ddee05e530e
+                                                           ] ,
+                                                           [ rdf:type owl:Restriction ;
+                                                             owl:onProperty :EMMO_ae2d1a96_bfa1_409a_a7d2_03d69e8a125a ;
+                                                             owl:someValuesFrom :EMMO_7dea2572_ab42_45bd_9fd7_92448cec762a
+                                                           ] ;
+                                           :EMMO_967080e5_2f42_4eb2_a3a9_c58143e835f9 "An 'observation' that results in a quantitative comparison of a 'property' of an 'object' with a standard reference.";
+                                           : EMMO_bb49844b_45d7_4f0d_8cae_8e552cbc20d6 "measurement"@en ;
+                                           rdfs:comment "A measurement is the process of experimentally obtaining one or more measurement results that can reasonably be attributed to a quantity.Measurement is the process of obtaining quantitative or qualitative data about a material or system. In hydrogen technologies, measurements are used to characterize the properties and performance of materials, devices, and systems." ;
+                                           rdfs:comment: "DataAcquisition", "ExperimentalAnalysis", "AnalyticalMeasurement", "PerformanceTesting", "MaterialCharacterization"
+                                           skos:prefLabel "Measurement".
+
+
+
+
+###  http://emmo.info/emmo#EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba
+
+:EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba rdf:type owl:Class ;
+                                           rdfs:subClassOf :EMMO_35d2e130_6e01_41ed_94f7_00b333d46cf9 ,
+                                                           [ rdf:type owl:Restriction ;
+                                                             owl:onProperty [ owl:inverseOf :EMMO_ae2d1a96_bfa1_409a_a7d2_03d69e8a125a
+                                                                            ] ;
+                                                             owl:someValuesFrom :EMMO_10a5fd39_06aa_4648_9e70_f962a9cb2069
+                                                           ] ,
+                                                           [ rdf:type owl:Restriction ;
+                                                             owl:onProperty [ owl:inverseOf :EMMO_e1097637_70d2_4895_973f_2396f04fa204
+                                                                            ] ;
+                                                             owl:someValuesFrom :EMMO_6f5af708_f825_4feb_a0d1_a8d813d3022b
+                                                           ] ;
+                                           owl:disjointUnionOf ( :EMMO_251cfb4f_5c75_4778_91ed_6c8395212fd8
+                                                                 :EMMO_2a888cdf_ec4a_4ec5_af1c_0343372fc978
+                                                               ) ;
+                                                                                                          :EMMO_967080e5_2f42_4eb2_a3a9_c58143e835f9 "A 'Perceptual' referring to a specific code that is used as 'Conventional' sign to represent an 'Object' according to a specific interaction mechanism by an 'Observer'.
+
+(A property is always a partial representation of an 'Object' since it reflects the 'Object' capability to be part of a specific 'Observation' process)"@en ;
+                                           :EMMO_b432d2d5_25f4_4165_99c5_5935a7763c1a "Hardness is a subclass of properties.
+
+Vickers hardness is a subclass of hardness that involves the procedures and instruments defined by the standard hardness test."@en ,
+                                                                                      "Let's define the class 'colour' as the subclass of the properties that involve photon emission and an electromagnetic radiation sensible observer.
+
+An individual C of this class 'colour' can be defined be declaring the process individual (e.g. daylight illumination) and the observer (e.g. my eyes)
+
+Stating that an entity E hasProperty C, we mean that it can be observed by such setup of process + observer (i.e. observed by my eyes under daylight).
+
+This definition can be generalized by using a generic human eye, so that the observer can be a generic human.
+
+This can be used in material characterization, to define exactly the type of measurement done, including the instrument type."@en ;
+                                           rdfs:comment "A 'Property' is a sort of name or label that we put upon objects that interact with an observer in the same specific way.
+
+e.g. \"hot\" objects are objects that interact with an observer through a perception mechanism aimed to perceive an heat source."@en ,
+                                                        "We know real world entities through observation/perception.
+
+A non-perceivable real world entity does not exist (or it exists on a plane of existance that has no intersection with us and we can say nothing about it).
+
+Perception/observation of a real wolrd entity occurs when the entity stimulate an observer in a peculiar way through a well defined perception channel.
+
+For this reason each property is related to a specific observation process which involves a specific observer with its own perception mechanisms.
+
+The observation process (e.g. a look, a photo shot, a measurement) is performed  by an observer (e.g. you, a camera, an instrument) through a specific perception mechanism (e.g. retina impression, CMOS excitation, piezoelectric sensor activation) and involves an observed entity.
+
+An observation is a semiotic process, since it stimulate an interpretant within the interpreter who can communicate the perception result to other interpreters through a sign which is the property.
+
+Property subclasses are specializations that depend on the type of observation processes.
+
+e.g. the property 'colour' is related to a process that involves emission or interaction of photon and an observer who can perceive electromagnetic radiation in the visible frequency range.
+
+Properties usually relies on symbolic systems (e.g. for colour it can be palette or RGB)." ;
+
+
+                                           rdfs:comments "Property is a characteristic or attribute that describes the behavior, performance, or nature of a material. These properties can be broadly categorized into physical (e.g., density, color), mechanical (e.g., strength, hardness), thermal (e.g., conductivity, expansion), and chemical (e.g., reactivity, corrosion resistance)."
+                                           rdfs:comment: property has a numeric value with a unit.
+                                           skos:prefLabel "Property".
+
+
+###  http://emmo.info/emmo#EMMO_d1d436e7_72fc_49cd_863b_7bfb4ba5276a
+
+:EMMO_d1d436e7_72fc_49cd_863b_7bfb4ba5276a rdf:type owl:Class ;
+                                           rdfs:subClassOf :EMMO_1eed0732_e3f1_4b2c_a9c4_b4e75eeb5895 ;
+                                           :EMMO_b432d2d5_25f4_4165_99c5_5935a7763c1a "refers to a specific and quantifiable and measurable factor in the manufacturing process"@en ;
+                                           rdfs:comment "A 'variable' whose value is assumed to be known independently from the equation, but whose value is not explicitated in the equation."@en ;
+                                           rdfs: comment: parameter has a numeric value and the unit.
+                                           rdfs:comment: "each manufacturing process has its own parameter."
+                                           skos:prefLabel "Parameter".
+
+#################################################################
+#    Object Properties
+#################################################################
+###  http://emmo.info/emmo#EMMO_e1097637
+:EMMO_e1097637 rdf:type owl:ObjectProperty ;
+               rdfs:domain :EMMO_4207e895_8b83_4318_996a_72cfb32acd94 ;
+               rdfs:range :EMMO_a4d66059_5dd3_4b90_b4cb_10960559441b ;
+               rdfs:comment : "signifies the primary material or raw substance that serves as the starting point for a manufacturing process. This material undergoes various stages of processing, treatment, or manipulation to yield the final product."
+               skos:prefLabel "is_manufacturing_input".
+
+###  http://emmo.info/emmo#EMMO_e1245987
+:EMMO_e1245987 rdf:type owl:ObjectProperty ;
+               rdfs:domain :EMMO_a4d66059_5dd3_4b90_b4cb_10960559441b ;
+               rdfs:range :EMMO_4207e895_8b83_4318_996a_72cfb32acd94 ;
+               rdfs:comment : "refers to the final product or material that is generated as a result of a manufacturing process. This output represents the transformed or processed form of the initial raw or semi-processed material."
+               skos:prefLabel "has_manufacturing_output".
+
+###  http://emmo.info/emmo#EMMO_m5677989
+:EMMO_m5677989 rdf:type owl:ObjectProperty ;
+               rdfs:domain :EMMO_4207e895_8b83_4318_996a_72cfb32acd94 ;
+               rdfs:range :EMMO_463bcfda_867b_41d9_a967_211d4d437cfb;
+               rdfs:comment : " refers to the initial set of parameters or characteristics that are subject to quantitative assessment or measurement. These parameters serve as the basis for collecting data and obtaining specific numerical values during the measurement process."
+               skos:prefLabel "is_measurement_input".
+
+###  http://emmo.info/emmo#EMMO_m87987545
+:EMMO_m87987545 rdf:type owl:ObjectProperty ;
+               rdfs:domain :EMMO_463bcfda_867b_41d9_a967_211d4d437cfb ;
+               rdfs:range :EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba;
+               rdfs:comment : " refers to the quantifiable results or data obtained through a measurement process applied to a material or a set of parameters. These outputs represent the numerical values or characteristics that have been assessed, observed, or calculated during the measurement procedure. The has_measurement_output can include measurements of various material properties such as dimensions, mass, density, hardness, and other relevant attributes, providing valuable information for characterizing and analyzing materials."
+               skos:prefLabel "has_measurement_output".
+
+###  http://emmo.info/emmo#EMMO_p5778r78
+:EMMO_p5778r78 rdf:type owl:ObjectProperty ;
+               rdfs:domain :EMMO_4207e895_8b83_4318_996a_72cfb32acd94 ;
+               rdfs:range :EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba ;
+               rdfs:comment : "denotes a specific characteristic, trait, or measurable attribute inherent to a material. Properties in materials science encompass a broad range of features, including but not limited to dimensions, mass, density, hardness, thermal conductivity, electrical conductivity, and other quantifiable attributes. These properties define how a material behaves under various conditions and influence its suitability for specific applications."
+               skos:prefLabel "has_property".
+
+###  http://emmo.info/emmo#EMMO_p46903ar7
+:EMMO_p46903ar7 rdf:type owl:ObjectProperty ;
+               rdfs:domain :EMMO_a4d66059_5dd3_4b90_b4cb_10960559441b ;
+               rdfs:range :EMMO_d1d436e7_72fc_49cd_863b_7bfb4ba5276a ;
+               rdfs:comment : " refers to a specific and quantifiable attribute or characteristic in the manufacturing process. Parameters in materials science may include various properties such as dimensions, mass, density, hardness, thermal conductivity, and other measurable features."
+               skos:prefLabel "has_parameter".
+
+{chat_history}
+{context}
+Question: {question}
+
+"""
+    prompt3 = PromptTemplate(
+        template=template3, input_variables=["context", "question", "chat_history"], output_parser=CommaSeparatedListOutputParser()
+    )
     llm = ChatOpenAI(
         model_name="gpt-4-1106-preview",
         temperature=0,
         max_tokens=4000,
     )
 
+    #print(f"Processing PDF: {pdf_path}")
+
     loader = UnstructuredPDFLoader(pdf_path)
     docs = loader.load()
 
     for idx, doc in enumerate(docs):
+
 
         headers_to_split_on = [
             ("Abstract", "Header 1"),
@@ -262,6 +451,7 @@ Question: {question}
         markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
         md_header_splits = markdown_splitter.split_text(doc.page_content)
         big_chunks_retriever.add_documents(md_header_splits)
+
 
     # Build QA interface for the PDF
     qa_interface1 = ConversationalRetrievalChain.from_llm(
@@ -281,7 +471,14 @@ Question: {question}
         memory=memory,
         combine_docs_chain_kwargs={'prompt': prompt2}
     )
-
+    qa_interface3 = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        chain_type="stuff",
+        retriever=big_chunks_retriever,
+        return_source_documents=False,
+        memory=memory,
+        combine_docs_chain_kwargs={'prompt': prompt3}
+    )
     query1 = "extract the materials, manufacturing, measurement, parameters, properties from each document ."
     result = qa_interface1({"question": query1})
     all_results1.append(result["answer"].strip('```json').strip('```').strip())
@@ -297,10 +494,15 @@ Question: {question}
         result2 = qa_interface2({"question": query})
         all_results2.append(result2["answer"].strip('```json').strip('```').strip())
 
+    query3 = "Create a complete knowledge graph including all the nodes and the relationships extracted and stored in History. Use the URI defined for 'Classes' and 'Object properties' in emmo ontology. Format the output in JSON-LD."
+    result = qa_interface3({"question": query3})
+    all_results.append(result["answer"].strip('```json').strip('```').strip())
+
+    #print(f"Finished Processing PDF: {pdf_path}")
     msgs.clear()
     memory.clear()
 
-    return all_results1 + all_results2
+    return all_results
 
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 if pdf_file is not None:
