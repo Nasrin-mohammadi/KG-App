@@ -13,4 +13,5 @@ To install and run the app locally, follow these steps:
 1. git clone https://github.com/Nasrin-mohammadi/KG-App.git
 2. cd KG-App
 3. pip install -r requirements.txt
-4. streamlit run app.py
+4. brew install poppler
+5. streamlit run app.py
