@@ -1,4 +1,4 @@
-nltk
+langchain_community
 langchain==0.1.16
 langchain_openai==0.1.3
 Openai==1.3.6
