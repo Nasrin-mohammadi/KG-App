@@ -10,8 +10,8 @@ if api_key:
     os.environ['OPENAI_API_KEY'] = api_key
 else:
     st.stop()
-
-from langchain.document_loaders import UnstructuredPDFLoader
+from langchain_community.document_loaders import UnstructuredPDFLoader
+#from langchain.document_loaders import UnstructuredPDFLoader
 from langchain_openai import ChatOpenAI
 from langchain.llms.openai import OpenAI
 from langchain.prompts.prompt import PromptTemplate
