@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 import nltk
-nltk.download('punkt')
+nltk.download('punkt_tab')
 
 st.title("KG Construction App")
 
